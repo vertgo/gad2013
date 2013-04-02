@@ -23,7 +23,7 @@ N <- nrow(data)     # total number of records (150)
 fold.size <- N/numFolds #well, we know this is gonna be an even split
 
 shuffled.index <- sample(1:N, N)       # shuffle some indices, essentially
-
+print( shuffled.index)
 
 #################################################
 # APPLY MODEL
@@ -37,12 +37,14 @@ fold.offset <- 1 # set the number offset to 0
 for ( curFold in 1:numFolds)
 {
 
-	testSlice.index <- shuffled.index[fold.offset:fold.offset + fold.size] 
+	testSlice.index <- shuffled.index[ fold.offset : (fold.offset + fold.size-1) ] 
+	cat('\n', 'testSlice.index = ', testSlice.index, ', fold number = ', curFold, '\n', sep='')     # print slice
+	print( testSlice.index)
 	train.data <- data[-testSlice.index, ]       # perform train/test split
 	test.data <- data[testSlice.index, ]       # note use of neg index...different than Python!
 
-	train.labels <- as.factor(as.matrix(labels)[train.index, ])     # extract training set labels
-	test.labels <- as.factor(as.matrix(labels)[-train.index, ])     # extract test set labels
+	train.labels <- as.factor(as.matrix(labels)[-testSlice.index, ])     # extract training set labels
+	test.labels <- as.factor(as.matrix(labels)[testSlice.index, ])     # extract test set labels
 	
 	for (k in 1:max.k)              # perform fit for various values of k
 	{
@@ -52,10 +54,11 @@ for ( curFold in 1:numFolds)
 	                    k = k                       # number of NN to poll
 	               )
 
-	    cat('\n', 'k = ', k, ', train.pct = ', train.pct, '\n', sep='')     # print params
+	    cat('\n', 'k = ', k, ', fold number = ', curFold, '\n', sep='')     # print params
 	    print(table(test.labels, knn.fit))          # print confusion matrix
 
 	    this.err <- sum(test.labels != knn.fit) / length(test.labels)    # store gzn err
+
 	    err.rates <- rbind(err.rates, this.err)     # append err to total results
 	}
 
@@ -70,7 +73,7 @@ results <- data.frame(1:max.k, err.rates)   # create results summary data frame
 names(results) <- c('k', 'err.rate')        # label columns of results df
 
 # create title for results plot
-title <- paste('knn results (train.pct = ', train.pct, ')', sep='')
+title <- paste('knn results (numFolds = ', numFolds, ')', sep='')
 
 # create results plot
 results.plot <- ggplot(results, aes(x=k, y=err.rate)) + geom_point() + geom_line()
