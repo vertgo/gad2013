@@ -33,21 +33,23 @@ err.rates <- data.frame()       # initialize results object
 
 max.k <- 100
 
-fold.offset <- 1 # set the number offset to 0
-for ( curFold in 1:numFolds)
-{
-
-	testSlice.index <- shuffled.index[ fold.offset : (fold.offset + fold.size-1) ] 
-	cat('\n', 'testSlice.index = ', testSlice.index, ', fold number = ', curFold, '\n', sep='')     # print slice
-	print( testSlice.index)
-	train.data <- data[-testSlice.index, ]       # perform train/test split
-	test.data <- data[testSlice.index, ]       # note use of neg index...different than Python!
-
-	train.labels <- as.factor(as.matrix(labels)[-testSlice.index, ])     # extract training set labels
-	test.labels <- as.factor(as.matrix(labels)[testSlice.index, ])     # extract test set labels
-	
-	for (k in 1:max.k)              # perform fit for various values of k
+for (k in 1:max.k)              # perform fit for various values of k
 	{
+	fold.offset <- 1 # set the number offset to 0
+	this.err <- 0
+	for ( curFold in 1:numFolds)
+	{
+
+		testSlice.index <- shuffled.index[ fold.offset : (fold.offset + fold.size-1) ] 
+		#cat('\n', 'testSlice.index = ', testSlice.index, ', fold number = ', curFold, '\n', sep='')     # print slice
+		
+		#print( testSlice.index) #uncomment to see the testSlice
+		train.data <- data[-testSlice.index, ]       # perform train/test split
+		test.data <- data[testSlice.index, ]       # note use of neg index...different than Python!
+
+		train.labels <- as.factor(as.matrix(labels)[-testSlice.index, ])     # extract training set labels
+		test.labels <- as.factor(as.matrix(labels)[testSlice.index, ])     # extract test set labels
+	
 	    knn.fit <- knn(train = train.data,          # training set
 	                    test = test.data,           # test set
 	                    cl = train.labels,          # true labels
@@ -57,12 +59,14 @@ for ( curFold in 1:numFolds)
 	    cat('\n', 'k = ', k, ', fold number = ', curFold, '\n', sep='')     # print params
 	    print(table(test.labels, knn.fit))          # print confusion matrix
 
-	    this.err <- sum(test.labels != knn.fit) / length(test.labels)    # store gzn err
+	    this.err <- this.err + sum(test.labels != knn.fit) / length(test.labels)    # store gzn err
 
-	    err.rates <- rbind(err.rates, this.err)     # append err to total results
+	    
+
+		fold.offset <- fold.offset + fold.size #increment the current fold offset number so we sample the next slice
 	}
-
-	fold.offset <- fold.offset + fold.size #increment the current fold offset number so we sample the next slice
+	this.err <- this.err/ numFolds #average the err over the number of folds
+	err.rates <- rbind(err.rates, this.err)     # append err to total results
 }
 
 #################################################
